@@ -1,0 +1,1170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>Fish</title>
+<style>
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body {
+    margin: 0;
+    min-height: 100%;
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    overflow-x: hidden;
+  }
+  body {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    transition: background 0.4s ease;
+    background: #f5f5f7;
+    color: #1d1d1f;
+    width: 100%;
+  }
+  body.bg-home   { background: #f5f5f7; }
+  body.bg-fish   { background: #fbf5ee; }
+  body.bg-shark  { background: #f2f6f9; }
+  body.bg-squid  { background: #f8f3fa; }
+  body.bg-dog    { background: #faf4ea; }
+  body.bg-cat    { background: #f4f4f7; }
+  body.bg-hippo  { background: #f0f6f8; }
+
+  svg text { font-size: 48px; font-weight: 600; }
+
+  .tab svg {
+    cursor: pointer;
+    width: 100%;
+    height: auto;
+    max-width: 420px;
+    display: block;
+    margin: 0 auto;
+    touch-action: manipulation;
+    filter: drop-shadow(0 16px 28px rgba(0,0,0,0.10));
+  }
+
+  .caught-fish { opacity: 0; transition: opacity 0.2s ease-in; }
+  .caught-fish.visible { opacity: 1; }
+
+  .tray-wrap { margin-top: 16px; }
+  .tray {
+    position: relative;
+    height: 100px;
+    width: min(320px, 80vw);
+    margin: 0 auto;
+    padding: 0;
+    background: #fff;
+    border: 1px solid #e5e5ea;
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  }
+  .tray-fish {
+    position: absolute;
+    pointer-events: none;
+    display: block;
+  }
+  .tray-fish svg { display: block; }
+  .tray-label { margin: 10px 0 0; font-size: 14px; color: #6e6e73; }
+
+  .fetch-hint {
+    margin-top: 8px;
+    font-size: 13px;
+    color: #8e8e93;
+  }
+
+  .burger {
+    position: fixed;
+    top: 18px;
+    left: 18px;
+    width: 46px;
+    height: 46px;
+    background: rgba(255,255,255,0.85);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: none;
+    border-radius: 50%;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.10);
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    z-index: 20;
+    touch-action: manipulation;
+  }
+  .burger span { width: 20px; height: 2px; background: #1d1d1f; border-radius: 2px; }
+
+  nav {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100%;
+    width: min(240px, 75vw);
+    background: rgba(255,255,255,0.92);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    box-shadow: 4px 0 24px rgba(0,0,0,0.06);
+    transform: translateX(-100%);
+    transition: transform 0.3s cubic-bezier(.4,0,.2,1);
+    z-index: 10;
+    padding-top: 88px;
+    overflow-y: auto;
+  }
+  nav.open { transform: translateX(0); }
+  nav button {
+    display: block;
+    width: calc(100% - 24px);
+    margin: 2px 12px;
+    padding: 12px 14px;
+    background: none;
+    border: none;
+    border-radius: 10px;
+    color: #1d1d1f;
+    font-size: clamp(15px, 3.6vw, 16px);
+    font-weight: 500;
+    text-align: left;
+    cursor: pointer;
+    touch-action: manipulation;
+    transition: background 0.15s ease;
+  }
+  nav button:hover { background: #f2f2f4; }
+  nav button.active { background: #e8f0fe; color: #0071e3; font-weight: 600; }
+
+  .tab {
+    display: none;
+    width: 100%;
+    max-width: 700px;
+    padding: 96px 20px 60px;
+    text-align: center;
+  }
+  .tab.active { display: block; }
+
+  .tab article {
+    margin-top: 32px;
+    text-align: left;
+    color: #3a3a3c;
+    font-size: clamp(15px, 2.2vw, 17px);
+    line-height: 1.65;
+    background: #fff;
+    padding: clamp(20px, 4vw, 28px) clamp(22px, 5vw, 32px);
+    border-radius: 20px;
+    box-shadow: 0 2px 20px rgba(0,0,0,0.06);
+  }
+  .tab article h2 {
+    margin-top: 0;
+    text-transform: capitalize;
+    font-size: clamp(20px, 4vw, 26px);
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    color: #1d1d1f;
+  }
+
+  @media (min-width: 900px) {
+    .tab svg { max-width: 500px; }
+    .tab { max-width: 800px; }
+  }
+  @media (max-width: 420px) {
+    .tab { padding: 84px 14px 50px; }
+  }
+
+  .home-title {
+    color: #1d1d1f;
+    font-size: clamp(28px, 6vw, 40px);
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    margin: 0 0 28px;
+  }
+  .home-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+    gap: 16px;
+    max-width: 640px;
+    margin: 0 auto;
+  }
+  .animal-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    background: #fff;
+    border: none;
+    border-radius: 20px;
+    padding: 22px 12px;
+    cursor: pointer;
+    touch-action: manipulation;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+    transition: transform 0.2s cubic-bezier(.4,0,.2,1), box-shadow 0.2s ease;
+  }
+  .animal-card:hover, .animal-card:active {
+    transform: translateY(-4px);
+    box-shadow: 0 14px 28px rgba(0,0,0,0.12);
+  }
+  .animal-badge {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 30px;
+    box-shadow: inset 0 0 0 1px rgba(0,0,0,0.04);
+  }
+  .badge-fish   { background: linear-gradient(180deg, #ffe0b0 0%, #ffb066 100%); }
+  .badge-shark  { background: linear-gradient(180deg, #dbe7f0 0%, #9fb9cc 100%); }
+  .badge-squid  { background: linear-gradient(180deg, #ecdff2 0%, #c8a4d6 100%); }
+  .badge-dog    { background: linear-gradient(180deg, #f6e6c6 0%, #dcb277 100%); }
+  .badge-cat    { background: linear-gradient(180deg, #e8e8ee 0%, #c2c2ce 100%); }
+  .badge-hippo  { background: linear-gradient(180deg, #dcedf3 0%, #a7c9d6 100%); }
+  .animal-name {
+    color: #1d1d1f;
+    font-size: 15px;
+    font-weight: 500;
+  }
+
+  .paywall-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.35);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    z-index: 100;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s ease;
+  }
+  .paywall-overlay.open { opacity: 1; pointer-events: auto; }
+  .paywall-card {
+    background: #fff;
+    color: #1d1d1f;
+    border-radius: 20px;
+    padding: 32px 28px;
+    max-width: 340px;
+    width: 100%;
+    max-height: 85vh;
+    overflow-y: auto;
+    text-align: center;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+    transform: scale(0.92);
+    transition: transform 0.25s cubic-bezier(.4,0,.2,1);
+  }
+  .paywall-overlay.open .paywall-card { transform: scale(1); }
+  .paywall-card h3 { margin: 0 0 12px; font-size: 20px; font-weight: 700; letter-spacing: -0.01em; }
+  .paywall-card p { margin: 0 0 22px; font-size: 14px; line-height: 1.55; color: #6e6e73; }
+  .paywall-buttons { display: flex; flex-direction: column; gap: 10px; }
+  .paywall-btn {
+    padding: 12px 16px;
+    border-radius: 12px;
+    border: none;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    touch-action: manipulation;
+    transition: background 0.15s ease, transform 0.1s ease;
+  }
+  .paywall-btn.primary {
+    background: #0071e3;
+    color: #fff;
+  }
+  .paywall-btn.primary:hover { background: #0077ed; }
+  .paywall-btn.primary:active { transform: scale(0.97); }
+  .paywall-btn.secondary { background: none; color: #6e6e73; font-weight: 500; }
+  .paywall-btn.secondary:hover { color: #1d1d1f; }
+  .paywall-step2 { display: none; }
+  .paywall-overlay.step2 .paywall-step1 { display: none; }
+  .paywall-overlay.step2 .paywall-step2 { display: block; }
+</style>
+</head>
+<body class="bg-home">
+
+  <!-- shared mini-fish icon, styled to match the fish on the Fish tab -->
+  <svg style="position:absolute;width:0;height:0;overflow:hidden" aria-hidden="true">
+    <defs>
+      <linearGradient id="miniFishBody" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0%" stop-color="#c9dbc3"/>
+        <stop offset="50%" stop-color="#8fae87"/>
+        <stop offset="100%" stop-color="#3d5638"/>
+      </linearGradient>
+      <symbol id="fishIcon" viewBox="0 0 120 60">
+        <path d="M18 30 L2 10 L2 50 Z" fill="#5c7a56" stroke="#2a3d26" stroke-width="2" stroke-linejoin="round"/>
+        <ellipse cx="70" cy="30" rx="48" ry="24" fill="url(#miniFishBody)" stroke="#2a3d26" stroke-width="2.5"/>
+        <path d="M55 8 Q65 -6 80 6 Z" fill="#5c7a56" stroke="#2a3d26" stroke-width="1.5" stroke-linejoin="round"/>
+        <circle cx="100" cy="24" r="4.5" fill="#1a1a1a"/>
+        <circle cx="98.5" cy="22.5" r="1.3" fill="#fff"/>
+      </symbol>
+    </defs>
+  </svg>
+
+  <button class="burger" onclick="document.getElementById('nav').classList.toggle('open')">
+    <span></span><span></span><span></span>
+  </button>
+
+  <nav id="nav">
+    <button data-tab="home" class="active" onclick="showTab('home')">Home</button>
+    <button data-tab="fish" onclick="showTab('fish')">Fish</button>
+    <button data-tab="shark" onclick="showTab('shark')">Shark</button>
+    <button data-tab="squid" onclick="showTab('squid')">Squid</button>
+    <button data-tab="dog" onclick="showTab('dog')">Dog</button>
+    <button data-tab="cat" onclick="showTab('cat')">Cat</button>
+    <button data-tab="hippo" onclick="showTab('hippo')">Hippo</button>
+  </nav>
+
+  <div id="home" class="tab active">
+    <h1 class="home-title">Pick an animal</h1>
+    <div class="home-grid">
+      <button class="animal-card" onclick="showTab('fish')">
+        <span class="animal-badge badge-fish">🐟</span>
+        <span class="animal-name">Fish</span>
+      </button>
+      <button class="animal-card" onclick="showTab('shark')">
+        <span class="animal-badge badge-shark">🦈</span>
+        <span class="animal-name">Shark</span>
+      </button>
+      <button class="animal-card" onclick="showTab('squid')">
+        <span class="animal-badge badge-squid">🦑</span>
+        <span class="animal-name">Squid</span>
+      </button>
+      <button class="animal-card" onclick="showTab('dog')">
+        <span class="animal-badge badge-dog">🐶</span>
+        <span class="animal-name">Dog</span>
+      </button>
+      <button class="animal-card" onclick="showTab('cat')">
+        <span class="animal-badge badge-cat">🐱</span>
+        <span class="animal-name">Cat</span>
+      </button>
+      <button class="animal-card" onclick="showTab('hippo')">
+        <span class="animal-badge badge-hippo">🦛</span>
+        <span class="animal-name">Hippo</span>
+      </button>
+    </div>
+  </div>
+
+  <div id="fish" class="tab">
+    <svg onclick="spin(this)" width="560" height="340" viewBox="0 0 560 340">
+      <defs>
+        <radialGradient id="fishBody" cx="45%" cy="35%" r="75%">
+          <stop offset="0%" stop-color="#c9dbc3"/>
+          <stop offset="45%" stop-color="#8fae87"/>
+          <stop offset="80%" stop-color="#5c7a56"/>
+          <stop offset="100%" stop-color="#3d5638"/>
+        </radialGradient>
+        <radialGradient id="fishEye" cx="40%" cy="35%" r="65%">
+          <stop offset="0%" stop-color="#fff"/>
+          <stop offset="35%" stop-color="#d8c98a"/>
+          <stop offset="70%" stop-color="#2a2a10"/>
+          <stop offset="100%" stop-color="#000"/>
+        </radialGradient>
+        <pattern id="scales" width="22" height="18" patternUnits="userSpaceOnUse" patternTransform="translate(0,0)">
+          <path d="M0 18 Q11 0 22 18" fill="none" stroke="#2f4a2b" stroke-width="1" opacity="0.45"/>
+        </pattern>
+        <linearGradient id="finGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#7a9a72" stop-opacity="0.95"/>
+          <stop offset="100%" stop-color="#3d5638" stop-opacity="0.85"/>
+        </linearGradient>
+        <!-- shark bite: a literal hole cut through the body via mask -->
+        <mask id="fishBiteMask" maskUnits="userSpaceOnUse" x="0" y="0" width="560" height="340">
+          <rect x="0" y="0" width="560" height="340" fill="#fff"/>
+          <path id="fishBiteCutout"
+                d="M 128 248 L 148 273 L 163 248 L 183 276 L 203 246 L 223 270 L 243 253
+                   Q 233 298 178 303 Q 128 298 128 248 Z"
+                fill="#000" opacity="0"/>
+        </mask>
+      </defs>
+
+      <!-- caudal (tail) fin -->
+      <path d="M 75 165 L 5 55 Q 30 165 5 275 Z" fill="url(#finGrad)" stroke="#2a3d26" stroke-width="2.5"/>
+      <path d="M 75 165 L 25 90 M 75 165 L 25 240 M 75 165 L 10 165" stroke="#2a3d26" stroke-width="1" opacity="0.6"/>
+
+      <!-- body, masked so a shark bite can cut an actual hole through it -->
+      <g mask="url(#fishBiteMask)">
+        <path d="M 75 165
+                 C 75 90 160 45 280 45
+                 C 400 45 480 95 500 150
+                 C 515 175 480 195 500 165
+                 C 480 220 400 285 280 285
+                 C 160 285 75 240 75 165 Z"
+              fill="url(#fishBody)" stroke="#2a3d26" stroke-width="3"/>
+        <path d="M 75 165
+                 C 75 90 160 45 280 45
+                 C 400 45 480 95 500 150
+                 C 515 175 480 195 500 165
+                 C 480 220 400 285 280 285
+                 C 160 285 75 240 75 165 Z"
+              fill="url(#scales)"/>
+      </g>
+
+      <!-- torn rim around the bite, drawn on top so the hole reads clearly -->
+      <path id="fishBiteRim"
+            d="M 128 248 L 148 273 L 163 248 L 183 276 L 203 246 L 223 270 L 243 253
+               Q 233 298 178 303 Q 128 298 128 248 Z"
+            fill="none" stroke="#7a2f1f" stroke-width="3" stroke-linejoin="round"
+            opacity="0" style="transition:opacity 0.3s ease;"/>
+
+      <!-- dorsal fin -->
+      <path d="M 200 48 Q 220 -18 260 20 Q 290 5 310 40 Q 335 15 345 55 Q 300 70 250 68 Q 220 65 200 48 Z"
+            fill="url(#finGrad)" stroke="#2a3d26" stroke-width="2"/>
+      <!-- pectoral fin -->
+      <path d="M 250 175 Q 220 230 175 245 Q 230 245 265 205 Z" fill="url(#finGrad)" stroke="#2a3d26" stroke-width="2" opacity="0.9"/>
+      <!-- ventral fin -->
+      <path d="M 300 260 Q 310 305 280 320 Q 320 310 335 275 Z" fill="url(#finGrad)" stroke="#2a3d26" stroke-width="2" opacity="0.9"/>
+
+      <!-- gill slit -->
+      <path d="M 165 95 Q 150 165 165 235" fill="none" stroke="#2a3d26" stroke-width="2.5" opacity="0.7"/>
+      <path d="M 180 90 Q 163 165 180 240" fill="none" stroke="#2a3d26" stroke-width="1.5" opacity="0.5"/>
+
+      <!-- mouth -->
+      <path d="M 480 155 Q 500 165 480 178 Q 465 168 465 155 Q 465 148 480 155 Z" fill="#7a2f2f" stroke="#2a3d26" stroke-width="2"/>
+      <path d="M 466 152 l 6 4 M 472 150 l 5 5 M 478 149 l 4 6" stroke="#fff" stroke-width="1.5" opacity="0.85"/>
+
+      <!-- eye -->
+      <circle id="fishEyeVisible" cx="435" cy="120" r="19" fill="url(#fishEye)" stroke="#1a1a1a" stroke-width="1.5"/>
+      <g class="eye-pupil" data-cx="435" data-cy="120" data-r="7">
+        <circle cx="435" cy="120" r="7" fill="#0d0d0d"/>
+      </g>
+      <circle cx="429" cy="113" r="4" fill="#fff" opacity="0.85"/>
+      <!-- secret: resets the fake paywall, hidden in plain sight -->
+      <circle cx="435" cy="120" r="24" fill="transparent" pointer-events="all" style="cursor:pointer" onclick="resetPaywall(event)"/>
+
+      <!-- highlight -->
+      <ellipse cx="230" cy="90" rx="90" ry="30" fill="#fff" opacity="0.12"/>
+
+      <text x="290" y="185" text-anchor="middle" style="fill:#fdfaf0; font-size:42px; paint-order: stroke; stroke: #2a3d26; stroke-width: 2px;">fish</text>
+    </svg>
+    <article>
+      <h2>Fish</h2>
+      <p>Fish are aquatic animals that breathe using gills instead of lungs, letting them pull oxygen straight from the water. They're vertebrates, meaning they have a backbone, and they use fins to steer and propel themselves.</p>
+      <p>There are more than 30,000 known species, found everywhere from mountain streams to the deepest parts of the ocean. Most fish are cold-blooded, so their body temperature shifts with their surroundings.</p>
+    </article>
+  </div>
+
+  <div id="shark" class="tab">
+    <svg onclick="handleSharkClick(this)" width="560" height="320" viewBox="0 0 560 320">
+      <defs>
+        <linearGradient id="sharkBodyGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#eef3f7"/>
+          <stop offset="50%" stop-color="#c9d6e3"/>
+          <stop offset="100%" stop-color="#7d93a8"/>
+        </linearGradient>
+      </defs>
+      <path d="M 70 160 L 0 90 L 20 160 L 0 230 Z" fill="url(#sharkBodyGrad)" stroke="#1a1a1a" stroke-width="4" stroke-linejoin="round"/>
+      <path d="M 70 160 Q 200 40 460 100 Q 520 130 500 165 Q 480 195 400 200 Q 200 260 70 160 Z"
+            fill="url(#sharkBodyGrad)" stroke="#1a1a1a" stroke-width="4" stroke-linejoin="round"/>
+      <!-- countershading: darker dorsal ridge, lighter belly -->
+      <path d="M 90 145 Q 220 65 440 110" fill="none" stroke="#5c7086" stroke-width="10" opacity="0.35" stroke-linecap="round"/>
+      <path d="M 130 215 Q 260 250 420 190" fill="none" stroke="#f5f9fc" stroke-width="14" opacity="0.5" stroke-linecap="round"/>
+      <path d="M 250 70 L 290 10 L 320 90 Z" fill="url(#sharkBodyGrad)" stroke="#1a1a1a" stroke-width="4" stroke-linejoin="round"/>
+      <!-- gill lines -->
+      <path d="M 175 105 Q 165 130 175 160" stroke="#5c7086" stroke-width="2" fill="none" opacity="0.6"/>
+      <path d="M 195 100 Q 185 130 195 165" stroke="#5c7086" stroke-width="2" fill="none" opacity="0.6"/>
+      <path d="M 215 98 Q 205 130 215 168" stroke="#5c7086" stroke-width="2" fill="none" opacity="0.6"/>
+      <!-- sheen -->
+      <ellipse cx="230" cy="90" rx="110" ry="24" fill="#fff" opacity="0.2"/>
+      <circle cx="470" cy="120" r="13" fill="#eef3f6" stroke="#1a1a1a" stroke-width="1.5"/>
+      <g class="eye-pupil" data-cx="470" data-cy="120" data-r="6">
+        <circle cx="470" cy="120" r="6" fill="#1a1a1a"/>
+      </g>
+      <path d="M 480 150 L 500 145 L 495 160 L 510 155 L 500 168 L 480 165 Z" fill="white" stroke="#1a1a1a" stroke-width="2"/>
+      <text x="270" y="175" text-anchor="middle" style="fill:#1a1a1a">shark</text>
+    </svg>
+    <p class="fetch-hint">(double-click or double-tap the shark to swim up and bite the fish)</p>
+    <article>
+      <h2>Shark</h2>
+      <p>Sharks are a group of predatory fish with skeletons made of cartilage rather than bone, which makes them lighter and more flexible than bony fish. They've existed for over 400 million years, predating dinosaurs.</p>
+      <p>Most sharks rely on a keen sense of smell and the ability to detect electrical signals from other animals to hunt. Species range from the tiny dwarf lanternshark to the massive whale shark, the largest fish in the ocean.</p>
+    </article>
+  </div>
+
+  <div id="squid" class="tab">
+    <svg onclick="spin(this)" width="360" height="420" viewBox="0 0 360 420">
+      <defs>
+        <radialGradient id="squidBodyGrad" cx="35%" cy="22%" r="80%">
+          <stop offset="0%" stop-color="#f8e6f8"/>
+          <stop offset="55%" stop-color="#e0a6e0"/>
+          <stop offset="100%" stop-color="#9a5b9a"/>
+        </radialGradient>
+        <linearGradient id="squidTentacleGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#e6b3e6"/>
+          <stop offset="100%" stop-color="#b874b8"/>
+        </linearGradient>
+      </defs>
+      <path d="M 130 260 Q 110 340 90 400" stroke="url(#squidTentacleGrad)" stroke-width="10" fill="none" stroke-linecap="round"/>
+      <path d="M 160 270 Q 155 350 150 410" stroke="url(#squidTentacleGrad)" stroke-width="10" fill="none" stroke-linecap="round"/>
+      <path d="M 200 270 Q 205 350 210 410" stroke="url(#squidTentacleGrad)" stroke-width="10" fill="none" stroke-linecap="round"/>
+      <path d="M 230 260 Q 250 340 270 400" stroke="url(#squidTentacleGrad)" stroke-width="10" fill="none" stroke-linecap="round"/>
+      <path d="M 180 40 C 80 40 60 160 100 240 Q 180 290 260 240 C 300 160 280 40 180 40 Z"
+            fill="url(#squidBodyGrad)" stroke="#5a1f5a" stroke-width="4"/>
+      <path d="M 100 100 Q 40 90 50 150 Q 90 150 100 130 Z" fill="url(#squidBodyGrad)" stroke="#5a1f5a" stroke-width="3"/>
+      <path d="M 260 100 Q 320 90 310 150 Q 270 150 260 130 Z" fill="url(#squidBodyGrad)" stroke="#5a1f5a" stroke-width="3"/>
+      <!-- mantle shading + sheen -->
+      <path d="M 90 200 Q 180 260 270 200" fill="none" stroke="#6e2f6e" stroke-width="14" opacity="0.25" stroke-linecap="round"/>
+      <ellipse cx="140" cy="80" rx="55" ry="26" fill="#fff" opacity="0.28"/>
+      <circle cx="145" cy="130" r="15" fill="#f3dff3" stroke="#5a1f5a" stroke-width="1.5"/>
+      <circle cx="215" cy="130" r="15" fill="#f3dff3" stroke="#5a1f5a" stroke-width="1.5"/>
+      <g class="eye-pupil" data-cx="145" data-cy="130" data-r="7">
+        <circle cx="145" cy="130" r="7" fill="#2a0a2a"/>
+      </g>
+      <g class="eye-pupil" data-cx="215" data-cy="130" data-r="7">
+        <circle cx="215" cy="130" r="7" fill="#2a0a2a"/>
+      </g>
+      <text x="180" y="210" text-anchor="middle" style="fill:#5a1f5a; font-size:36px;">squid</text>
+    </svg>
+    <article>
+      <h2>Squid</h2>
+      <p>Squid are soft-bodied cephalopods related to octopuses and cuttlefish. They have eight arms plus two longer tentacles, and most species can shoot out a cloud of ink to escape predators.</p>
+      <p>They move by jet propulsion, squeezing water out of their mantle to dart quickly through the ocean. Many squid can also change color almost instantly using special skin cells called chromatophores.</p>
+    </article>
+  </div>
+
+  <div id="dog" class="tab">
+    <svg onclick="handleDogClick(this)" width="520" height="280" viewBox="0 0 520 280">
+      <defs>
+        <linearGradient id="dogBodyGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#f8dfb0"/>
+          <stop offset="50%" stop-color="#e8b87a"/>
+          <stop offset="100%" stop-color="#b8813f"/>
+        </linearGradient>
+      </defs>
+      <!-- tail -->
+      <path d="M 455 165 Q 505 150 500 100" fill="none" stroke="#c8925a" stroke-width="16" stroke-linecap="round"/>
+      <!-- back legs -->
+      <rect x="360" y="205" width="22" height="45" rx="9" fill="#a97a45" stroke="#4a2c10" stroke-width="3"/>
+      <rect x="400" y="205" width="22" height="45" rx="9" fill="#a97a45" stroke="#4a2c10" stroke-width="3"/>
+      <!-- front legs -->
+      <rect x="160" y="205" width="22" height="45" rx="9" fill="#a97a45" stroke="#4a2c10" stroke-width="3"/>
+      <rect x="200" y="205" width="22" height="45" rx="9" fill="#a97a45" stroke="#4a2c10" stroke-width="3"/>
+      <!-- long body -->
+      <ellipse cx="300" cy="175" rx="170" ry="55" fill="url(#dogBodyGrad)" stroke="#4a2c10" stroke-width="4"/>
+      <!-- back-ridge shading + belly highlight -->
+      <path d="M 150 130 Q 300 108 450 135" fill="none" stroke="#a06b34" stroke-width="10" opacity="0.4" stroke-linecap="round"/>
+      <path d="M 170 205 Q 300 225 430 200" fill="none" stroke="#fdf0d6" stroke-width="12" opacity="0.45" stroke-linecap="round"/>
+      <!-- far ear (behind head) -->
+      <path d="M 145 110 Q 120 160 145 205 Q 175 195 165 150 Q 165 125 145 110 Z" fill="#a97a45" stroke="#4a2c10" stroke-width="3"/>
+      <!-- skull -->
+      <circle cx="120" cy="155" r="58" fill="url(#dogBodyGrad)" stroke="#4a2c10" stroke-width="4"/>
+      <!-- near ear (in front) -->
+      <path d="M 100 115 Q 65 160 90 210 Q 122 200 112 155 Q 112 130 100 115 Z" fill="#c8925a" stroke="#4a2c10" stroke-width="3"/>
+      <!-- long snout -->
+      <path d="M 65 150 Q 15 148 15 170 Q 15 188 65 185 Z" fill="#f5d9a8" stroke="#4a2c10" stroke-width="4"/>
+      <!-- nose -->
+      <ellipse cx="20" cy="167" rx="12" ry="10" fill="#4a2c10"/>
+      <ellipse cx="17" cy="163" rx="3" ry="2" fill="#fff" opacity="0.6"/>
+      <!-- mouth line -->
+      <path d="M 30 185 Q 55 195 78 184" fill="none" stroke="#4a2c10" stroke-width="2.5" stroke-linecap="round"/>
+      <!-- head sheen -->
+      <ellipse cx="105" cy="120" rx="30" ry="14" fill="#fff" opacity="0.25"/>
+      <!-- eye -->
+      <circle cx="100" cy="140" r="13" fill="#fff6e6" stroke="#4a2c10" stroke-width="1.5"/>
+      <g class="eye-pupil" data-cx="100" data-cy="140" data-r="6">
+        <circle cx="100" cy="140" r="6" fill="#2a1806"/>
+      </g>
+      <circle cx="97" cy="137" r="2" fill="#fff" opacity="0.9"/>
+      <text x="300" y="185" text-anchor="middle" style="fill:#4a2c10; font-size:34px;">dog</text>
+      <!-- fish caught in mouth, hidden until the dog fetches it -->
+      <g class="caught-fish" transform="translate(15,170) rotate(20) scale(0.85)">
+        <use href="#fishIcon" xlink:href="#fishIcon" x="-8" y="-17" width="70" height="35"/>
+      </g>
+    </svg>
+    <p class="fetch-hint">(double-click or double-tap the dog to fetch a fish)</p>
+    <div class="tray-wrap">
+      <div class="tray" id="dogTray"></div>
+      <p class="tray-label">Caught: <span id="fishCount">0</span></p>
+    </div>
+    <article>
+      <h2>Dog</h2>
+      <p>Dogs were domesticated from wolves tens of thousands of years ago, making them one of humanity's oldest animal companions. They're known for their loyalty, trainability, and keen sense of smell.</p>
+      <p>There are hundreds of recognized breeds, bred over centuries for tasks like herding, guarding, hunting, and companionship. Dogs communicate through body language, barks, and a wide range of facial expressions.</p>
+    </article>
+  </div>
+
+  <div id="cat" class="tab">
+    <svg onclick="handleCatClick(this)" width="380" height="360" viewBox="0 0 380 360">
+      <defs>
+        <radialGradient id="catBodyGrad" cx="40%" cy="30%" r="75%">
+          <stop offset="0%" stop-color="#dcdce8"/>
+          <stop offset="55%" stop-color="#aaaabb"/>
+          <stop offset="100%" stop-color="#6c6c80"/>
+        </radialGradient>
+      </defs>
+      <path d="M 110 100 L 70 20 L 150 90 Z" fill="#8a8a99" stroke="#2a2a33" stroke-width="4" stroke-linejoin="round"/>
+      <path d="M 270 100 L 310 20 L 230 90 Z" fill="#8a8a99" stroke="#2a2a33" stroke-width="4" stroke-linejoin="round"/>
+      <path d="M 118 85 L 90 35 L 138 80 Z" fill="#e0a0ad" opacity="0.85"/>
+      <path d="M 262 85 L 290 35 L 242 80 Z" fill="#e0a0ad" opacity="0.85"/>
+      <circle cx="190" cy="170" r="110" fill="url(#catBodyGrad)" stroke="#2a2a33" stroke-width="4"/>
+      <!-- tabby stripes + face shading -->
+      <path d="M 100 90 Q 190 60 280 90" fill="none" stroke="#7c7c92" stroke-width="8" opacity="0.35" stroke-linecap="round"/>
+      <path d="M 90 230 Q 190 260 290 230" fill="none" stroke="#eef0f7" stroke-width="12" opacity="0.4" stroke-linecap="round"/>
+      <ellipse cx="150" cy="115" rx="35" ry="16" fill="#fff" opacity="0.22"/>
+      <ellipse cx="150" cy="160" rx="15" ry="19" fill="#cbe36a" stroke="#2a2a33" stroke-width="1.5"/>
+      <ellipse cx="230" cy="160" rx="15" ry="19" fill="#cbe36a" stroke="#2a2a33" stroke-width="1.5"/>
+      <g class="eye-pupil" data-cx="150" data-cy="160" data-r="6">
+        <ellipse cx="150" cy="160" rx="5" ry="15" fill="#111"/>
+      </g>
+      <g class="eye-pupil" data-cx="230" data-cy="160" data-r="6">
+        <ellipse cx="230" cy="160" rx="5" ry="15" fill="#111"/>
+      </g>
+      <path d="M 180 195 L 200 195 L 190 208 Z" fill="#e08aa0"/>
+      <line x1="130" y1="205" x2="60" y2="195" stroke="#2a2a33" stroke-width="3"/>
+      <line x1="130" y1="215" x2="60" y2="220" stroke="#2a2a33" stroke-width="3"/>
+      <line x1="250" y1="205" x2="320" y2="195" stroke="#2a2a33" stroke-width="3"/>
+      <line x1="250" y1="215" x2="320" y2="220" stroke="#2a2a33" stroke-width="3"/>
+      <text x="190" y="250" text-anchor="middle" style="fill:#2a2a33; font-size:34px;">cat</text>
+      <!-- fish stolen from the dog, flashed briefly in the cat's mouth -->
+      <g class="caught-fish" transform="translate(160,200) rotate(8) scale(0.8)">
+        <use href="#fishIcon" xlink:href="#fishIcon" x="-35" y="-17" width="70" height="35"/>
+      </g>
+    </svg>
+    <p class="fetch-hint">(double-click or double-tap the cat to steal a fish from the dog)</p>
+    <div class="tray-wrap">
+      <div class="tray" id="catTray"></div>
+      <p class="tray-label">Stolen: <span id="catStolenCount">0</span></p>
+    </div>
+    <article>
+      <h2>Cat</h2>
+      <p>Cats were domesticated around 9,000 years ago, likely drawn to early farming settlements to hunt rodents. They remain more independent than most domestic animals, retaining strong hunting instincts.</p>
+      <p>Cats communicate through meows, purrs, body posture, and scent marking. They have excellent night vision and a flexible spine that lets them squeeze through tight spaces and land on their feet.</p>
+    </article>
+  </div>
+
+  <div id="hippo" class="tab">
+    <svg onclick="spin(this)" width="560" height="340" viewBox="0 0 560 340">
+      <defs>
+        <radialGradient id="hippoBodyGrad" cx="40%" cy="25%" r="80%">
+          <stop offset="0%" stop-color="#dcedf5"/>
+          <stop offset="55%" stop-color="#a9c4d4"/>
+          <stop offset="100%" stop-color="#5f7f92"/>
+        </radialGradient>
+        <linearGradient id="hippoSnoutGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#e6f2f8"/>
+          <stop offset="100%" stop-color="#a3c3d3"/>
+        </linearGradient>
+      </defs>
+      <circle cx="150" cy="70" r="28" fill="#8faabb" stroke="#2b4b5c" stroke-width="4"/>
+      <circle cx="330" cy="70" r="28" fill="#8faabb" stroke="#2b4b5c" stroke-width="4"/>
+      <ellipse cx="240" cy="170" rx="190" ry="130" fill="url(#hippoBodyGrad)" stroke="#2b4b5c" stroke-width="4"/>
+      <!-- wrinkle creases + belly sheen -->
+      <path d="M 100 130 Q 240 90 380 130" fill="none" stroke="#4c6b7d" stroke-width="6" opacity="0.3" stroke-linecap="round"/>
+      <path d="M 90 220 Q 240 260 390 210" fill="none" stroke="#eef7fb" stroke-width="14" opacity="0.35" stroke-linecap="round"/>
+      <ellipse cx="180" cy="100" rx="70" ry="26" fill="#fff" opacity="0.2"/>
+      <ellipse cx="240" cy="260" rx="150" ry="60" fill="url(#hippoSnoutGrad)" stroke="#2b4b5c" stroke-width="4"/>
+      <circle cx="190" cy="250" r="10" fill="#2b4b5c"/>
+      <circle cx="290" cy="250" r="10" fill="#2b4b5c"/>
+      <circle cx="150" cy="110" r="15" fill="#e4f3fa" stroke="#2b4b5c" stroke-width="1.5"/>
+      <circle cx="330" cy="110" r="15" fill="#e4f3fa" stroke="#2b4b5c" stroke-width="1.5"/>
+      <g class="eye-pupil" data-cx="150" data-cy="110" data-r="7">
+        <circle cx="150" cy="110" r="7" fill="#16303c"/>
+      </g>
+      <g class="eye-pupil" data-cx="330" data-cy="110" data-r="7">
+        <circle cx="330" cy="110" r="7" fill="#16303c"/>
+      </g>
+      <text x="240" y="200" text-anchor="middle" style="fill:#2b4b5c; font-size:40px;">hippo</text>
+    </svg>
+    <article>
+      <h2>Hippo</h2>
+      <p>Hippopotamuses are large semi-aquatic mammals native to sub-Saharan Africa. Despite their bulky build, they're excellent swimmers and spend much of the day submerged in rivers and lakes to stay cool.</p>
+      <p>Hippos are surprisingly fast on land, capable of short bursts of speed, and are considered one of the most dangerous animals in Africa due to their aggressive territorial behavior.</p>
+    </article>
+  </div>
+
+<script>
+  var ANIMAL_IDS = ['fish', 'shark', 'squid', 'dog', 'cat', 'hippo'];
+
+  function getAnimalSvg(id) {
+    var tab = document.getElementById(id);
+    return tab ? tab.querySelector(':scope > svg') : null;
+  }
+
+  function setCookie(name, value, days) {
+    var expires = '';
+    if (days) {
+      var date = new Date();
+      date.setTime(date.getTime() + days * 24 * 60 * 60 * 1000);
+      expires = '; expires=' + date.toUTCString();
+    }
+    document.cookie = name + '=' + encodeURIComponent(value) + expires + '; path=/; SameSite=Lax';
+  }
+
+  function getCookie(name) {
+    var match = document.cookie.match(new RegExp('(?:^|; )' + name + '=([^;]*)'));
+    return match ? decodeURIComponent(match[1]) : null;
+  }
+
+  var cookiesAllowed = false;
+
+  function acceptCookies() {
+    cookiesAllowed = true;
+    var modal = document.getElementById('cookieModal');
+    if (modal) modal.classList.remove('open');
+    restoreState();
+  }
+
+  function persistState() {
+    if (!cookiesAllowed) return;
+    var state = { spun: {}, bitten: false, dogCount: 0, catCount: 0 };
+    ANIMAL_IDS.forEach(function (id) {
+      var svg = getAnimalSvg(id);
+      state.spun[id] = !!(svg && svg.dataset.spun === '1');
+    });
+    var bite = document.getElementById('fishBiteCutout');
+    state.bitten = !!(bite && bite.getAttribute('opacity') === '1');
+    var fishCountEl = document.getElementById('fishCount');
+    var catCountEl = document.getElementById('catStolenCount');
+    state.dogCount = parseInt((fishCountEl && fishCountEl.textContent) || '0', 10);
+    state.catCount = parseInt((catCountEl && catCountEl.textContent) || '0', 10);
+    setCookie('fishSiteState', JSON.stringify(state), 365);
+  }
+
+  function restoreState() {
+    var raw = getCookie('fishSiteState');
+    if (!raw) return;
+    var state;
+    try {
+      state = JSON.parse(raw);
+    } catch (e) {
+      return;
+    }
+
+    ANIMAL_IDS.forEach(function (id) {
+      var svg = getAnimalSvg(id);
+      if (svg && state.spun && state.spun[id]) {
+        svg.dataset.spun = '1';
+      }
+    });
+
+    if (state.bitten) markFishBitten();
+
+    var dogN = state.dogCount || 0;
+    for (var i = 0; i < dogN; i++) addFishToTray('dogTray', 'fishCount');
+
+    var catN = state.catCount || 0;
+    for (var j = 0; j < catN; j++) addFishToTray('catTray', 'catStolenCount');
+  }
+
+  function resetPaywall(event) {
+    if (event) event.stopPropagation();
+
+    // clear every animal's one-time spin lock
+    ANIMAL_IDS.forEach(function (id) {
+      var svg = getAnimalSvg(id);
+      if (svg) delete svg.dataset.spun;
+    });
+
+    // heal the fish's bite mark
+    var cutoutHeal = document.getElementById('fishBiteCutout');
+    var rimHeal = document.getElementById('fishBiteRim');
+    if (cutoutHeal) cutoutHeal.setAttribute('opacity', '0');
+    if (rimHeal) rimHeal.setAttribute('opacity', '0');
+
+    // empty both trays back to zero
+    var dogTray = document.getElementById('dogTray');
+    var catTray = document.getElementById('catTray');
+    if (dogTray) dogTray.innerHTML = '';
+    if (catTray) catTray.innerHTML = '';
+    var fishCountEl = document.getElementById('fishCount');
+    var catCountEl = document.getElementById('catStolenCount');
+    if (fishCountEl) fishCountEl.textContent = '0';
+    if (catCountEl) catCountEl.textContent = '0';
+
+    persistState();
+
+    var eye = document.getElementById('fishEyeVisible');
+    if (eye) {
+      eye.style.transformOrigin = '50% 50%';
+      eye.animate(
+        [
+          { transform: 'scale(1)' },
+          { transform: 'scale(0.8)', offset: 0.4 },
+          { transform: 'scale(0.8)', offset: 0.55 },
+          { transform: 'scale(1)' }
+        ],
+        { duration: 300, easing: 'ease-in-out' }
+      );
+    }
+  }
+
+  function spin(el) {
+    if (el.dataset.busy === '1') return;
+    if (el.dataset.spun === '1') {
+      showPaywall();
+      return;
+    }
+    el.dataset.spun = '1';
+    persistState();
+    el.style.transformOrigin = '50% 50%';
+    el.animate(
+      [{ transform: 'rotate(0deg)' }, { transform: 'rotate(360deg)' }],
+      { duration: 800, easing: 'ease-in-out' }
+    );
+  }
+
+  function showPaywall() {
+    var modal = document.getElementById('paywallModal');
+    if (!modal) return;
+    modal.classList.remove('step2');
+    modal.classList.add('open');
+  }
+
+  function closePaywall() {
+    var modal = document.getElementById('paywallModal');
+    if (modal) modal.classList.remove('open');
+  }
+
+  function paywallUpgrade() {
+    var modal = document.getElementById('paywallModal');
+    if (modal) modal.classList.add('step2');
+  }
+
+  function runForFish(el) {
+    el.dataset.busy = '1';
+    el.style.position = 'relative';
+    el.style.zIndex = '30';
+    el.style.transformOrigin = '50% 50%';
+
+    var anim = el.animate(
+      [
+        { transform: 'translateY(0) scale(1)', offset: 0 },
+        { transform: 'translateY(-115vh) scale(0.8)', offset: 0.4 },
+        { transform: 'translateY(-115vh) scale(0.8)', offset: 0.5 },
+        { transform: 'translateY(0) scale(1)', offset: 1 }
+      ],
+      { duration: 2400, easing: 'ease-in-out' }
+    );
+
+    var fish = el.querySelector('.caught-fish');
+    if (fish) {
+      fish.classList.remove('visible');
+      setTimeout(function () {
+        fish.classList.add('visible');
+      }, 960);
+    }
+
+    anim.onfinish = function () {
+      el.dataset.busy = '';
+      el.style.zIndex = '';
+      // a beat later, the dog drops the fish into its tray
+      setTimeout(function () {
+        if (fish) fish.classList.remove('visible');
+        addFishToTray('dogTray', 'fishCount');
+      }, 250);
+    };
+  }
+
+  function addFishToTray(trayId, countId) {
+    var tray = document.getElementById(trayId);
+    var countEl = document.getElementById(countId);
+    if (!tray) return;
+    var count = parseInt((countEl && countEl.textContent) || '0', 10);
+    var next = count + 1;
+
+    // scatter around the center, piling a little higher as more fish land
+    var leftPct = 50 + (Math.random() * 50 - 25);
+    var rise = Math.min(next * 3, 30);
+    var topPct = Math.min(80 - rise, 78) + (Math.random() * 16 - 8);
+    var rot = Math.random() * 70 - 35;
+
+    var wrap = document.createElement('div');
+    wrap.className = 'tray-fish';
+    wrap.dataset.rot = String(rot);
+    wrap.style.left = leftPct + '%';
+    wrap.style.top = topPct + '%';
+    wrap.style.zIndex = String(next);
+    wrap.style.opacity = '0';
+    wrap.style.transform = 'translate(-50%,-50%) rotate(' + rot + 'deg) scale(0)';
+
+    var ns = 'http://www.w3.org/2000/svg';
+    var svg = document.createElementNS(ns, 'svg');
+    svg.setAttribute('width', '46');
+    svg.setAttribute('height', '23');
+    svg.setAttribute('viewBox', '0 0 120 60');
+    var use = document.createElementNS(ns, 'use');
+    use.setAttribute('href', '#fishIcon');
+    use.setAttributeNS('http://www.w3.org/1999/xlink', 'href', '#fishIcon');
+    svg.appendChild(use);
+    wrap.appendChild(svg);
+    tray.appendChild(wrap);
+
+    requestAnimationFrame(function () {
+      requestAnimationFrame(function () {
+        wrap.style.transition = 'transform 0.45s cubic-bezier(.34,1.56,.64,1), opacity 0.25s ease-out';
+        wrap.style.opacity = '1';
+        wrap.style.transform = 'translate(-50%,-50%) rotate(' + rot + 'deg) scale(1)';
+      });
+    });
+
+    if (countEl) countEl.textContent = String(next);
+    persistState();
+  }
+
+  function catPounce(el, onDone) {
+    el.dataset.busy = '1';
+    el.style.position = 'relative';
+    el.style.zIndex = '30';
+    el.style.transformOrigin = '50% 50%';
+
+    var anim = el.animate(
+      [
+        { transform: 'translate(0,0) scale(1) rotate(0deg)', offset: 0 },
+        { transform: 'translate(55vw,-6vh) scale(0.85) rotate(-8deg)', offset: 0.4 },
+        { transform: 'translate(55vw,-6vh) scale(0.85) rotate(-8deg)', offset: 0.5 },
+        { transform: 'translate(0,0) scale(1) rotate(0deg)', offset: 1 }
+      ],
+      { duration: 1600, easing: 'ease-in-out' }
+    );
+
+    var mouthFish = el.querySelector('.caught-fish');
+    if (mouthFish) {
+      mouthFish.classList.remove('visible');
+      setTimeout(function () {
+        mouthFish.classList.add('visible');
+      }, 640);
+    }
+
+    anim.onfinish = function () {
+      el.dataset.busy = '';
+      el.style.zIndex = '';
+      setTimeout(function () {
+        if (mouthFish) mouthFish.classList.remove('visible');
+        if (onDone) onDone();
+      }, 200);
+    };
+  }
+
+  function stealFish(catEl) {
+    if (catEl.dataset.busy === '1') return;
+    var dogCountEl = document.getElementById('fishCount');
+    var dogTray = document.getElementById('dogTray');
+    var current = parseInt((dogCountEl && dogCountEl.textContent) || '0', 10);
+
+    if (current <= 0) {
+      // nothing to steal - a little disappointed shake
+      catEl.style.transformOrigin = '50% 50%';
+      catEl.animate(
+        [
+          { transform: 'translateX(0)' },
+          { transform: 'translateX(-8px)' },
+          { transform: 'translateX(8px)' },
+          { transform: 'translateX(0)' }
+        ],
+        { duration: 300, easing: 'ease-in-out' }
+      );
+      return;
+    }
+
+    // the theft happens right as the cat reaches the far point of its pounce (640ms in)
+    setTimeout(function () {
+      if (dogTray && dogTray.lastElementChild) {
+        var stolen = dogTray.lastElementChild;
+        var rot = stolen.dataset.rot || '0';
+        stolen.style.transition = 'transform 0.3s ease-in, opacity 0.3s ease-in';
+        stolen.style.opacity = '0';
+        stolen.style.transform = 'translate(-50%,-50%) rotate(' + rot + 'deg) scale(0)';
+        setTimeout(function () {
+          stolen.remove();
+        }, 300);
+      }
+      if (dogCountEl) dogCountEl.textContent = String(current - 1);
+      persistState();
+    }, 640);
+
+    // cat pounces off, grabs the fish, and drops it into its own tray on the way back
+    catPounce(catEl, function () {
+      addFishToTray('catTray', 'catStolenCount');
+    });
+  }
+
+  var catClickTimer = null;
+  function handleCatClick(el) {
+    if (catClickTimer) {
+      clearTimeout(catClickTimer);
+      catClickTimer = null;
+      stealFish(el);
+    } else {
+      catClickTimer = setTimeout(function () {
+        catClickTimer = null;
+        spin(el);
+      }, 300);
+    }
+  }
+
+  var dogClickTimer = null;
+  function handleDogClick(el) {
+    if (dogClickTimer) {
+      clearTimeout(dogClickTimer);
+      dogClickTimer = null;
+      runForFish(el);
+    } else {
+      dogClickTimer = setTimeout(function () {
+        dogClickTimer = null;
+        spin(el);
+      }, 300);
+    }
+  }
+
+  function markFishBitten() {
+    var cutout = document.getElementById('fishBiteCutout');
+    var rim = document.getElementById('fishBiteRim');
+    if (cutout) cutout.setAttribute('opacity', '1');
+    if (rim) rim.setAttribute('opacity', '1');
+    persistState();
+  }
+
+  function sharkBite(el) {
+    if (el.dataset.busy === '1') return;
+    el.dataset.busy = '1';
+    el.style.position = 'relative';
+    el.style.zIndex = '30';
+    el.style.transformOrigin = '50% 50%';
+
+    var anim = el.animate(
+      [
+        { transform: 'translateY(0) rotate(0deg) scale(1)', offset: 0 },
+        { transform: 'translateY(-55vh) rotate(-6deg) scale(0.95)', offset: 0.2 },
+        { transform: 'translateY(-110vh) rotate(4deg) scale(0.85)', offset: 0.4 },
+        { transform: 'translateY(-110vh) rotate(4deg) scale(0.85)', offset: 0.5 },
+        { transform: 'translateY(-55vh) rotate(-6deg) scale(0.95)', offset: 0.7 },
+        { transform: 'translateY(0) rotate(0deg) scale(1)', offset: 1 }
+      ],
+      { duration: 2200, easing: 'ease-in-out' }
+    );
+
+    // the shark reaches the fish right around the peak of its swim-up
+    setTimeout(markFishBitten, 880);
+
+    anim.onfinish = function () {
+      el.dataset.busy = '';
+      el.style.zIndex = '';
+    };
+  }
+
+  var sharkClickTimer = null;
+  function handleSharkClick(el) {
+    if (sharkClickTimer) {
+      clearTimeout(sharkClickTimer);
+      sharkClickTimer = null;
+      sharkBite(el);
+    } else {
+      sharkClickTimer = setTimeout(function () {
+        sharkClickTimer = null;
+        spin(el);
+      }, 300);
+    }
+  }
+
+  function showTab(id) {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+    document.querySelector('nav button[data-tab="' + id + '"]').classList.add('active');
+    document.getElementById('nav').classList.remove('open');
+    document.body.className = 'bg-' + id;
+    window.scrollTo(0, 0);
+  }
+
+  document.addEventListener('click', function (e) {
+    var nav = document.getElementById('nav');
+    var burger = document.querySelector('.burger');
+    if (nav.classList.contains('open') && !nav.contains(e.target) && !burger.contains(e.target)) {
+      nav.classList.remove('open');
+    }
+  });
+
+  // eyes that follow the cursor (or finger) across whichever animal is on screen
+  var eyeTickScheduled = false;
+  var lastPointerX = -9999;
+  var lastPointerY = -9999;
+
+  function schedulePointerUpdate(x, y) {
+    lastPointerX = x;
+    lastPointerY = y;
+    if (!eyeTickScheduled) {
+      eyeTickScheduled = true;
+      requestAnimationFrame(function () {
+        eyeTickScheduled = false;
+        updateEyes(lastPointerX, lastPointerY);
+      });
+    }
+  }
+
+  function updateEyes(pointerX, pointerY) {
+    var pupils = document.querySelectorAll('.tab.active .eye-pupil');
+    pupils.forEach(function (g) {
+      var svg = g.closest('svg');
+      if (!svg || !svg.viewBox || !svg.viewBox.baseVal) return;
+      var svgRect = svg.getBoundingClientRect();
+      if (!svgRect.width) return;
+      var vb = svg.viewBox.baseVal;
+      var scale = svgRect.width / vb.width;
+      var cx = parseFloat(g.dataset.cx);
+      var cy = parseFloat(g.dataset.cy);
+      var maxR = parseFloat(g.dataset.r);
+      var eyeScreenX = svgRect.left + (cx - vb.x) * scale;
+      var eyeScreenY = svgRect.top + (cy - vb.y) * scale;
+      var dx = pointerX - eyeScreenX;
+      var dy = pointerY - eyeScreenY;
+      var dist = Math.sqrt(dx * dx + dy * dy) || 1;
+      var angle = Math.atan2(dy, dx);
+      var thresholdPx = maxR * scale * 3;
+      var offsetUser = dist < thresholdPx ? maxR * (dist / thresholdPx) : maxR;
+      var offX = Math.cos(angle) * offsetUser;
+      var offY = Math.sin(angle) * offsetUser;
+      g.setAttribute('transform', 'translate(' + offX.toFixed(2) + ',' + offY.toFixed(2) + ')');
+    });
+  }
+
+  document.addEventListener('mousemove', function (e) {
+    schedulePointerUpdate(e.clientX, e.clientY);
+  });
+  document.addEventListener(
+    'touchmove',
+    function (e) {
+      if (e.touches && e.touches[0]) {
+        schedulePointerUpdate(e.touches[0].clientX, e.touches[0].clientY);
+      }
+    },
+    { passive: true }
+  );
+
+  var cookieModal = document.getElementById('cookieModal');
+  if (cookieModal) cookieModal.classList.add('open');
+</script>
+
+<div class="paywall-overlay open" id="cookieModal">
+  <div class="paywall-card">
+    <h3>🍪 This site uses cookies</h3>
+    <p>Choose an option to continue:</p>
+    <div class="paywall-buttons">
+      <button class="paywall-btn primary" onclick="acceptCookies()">Accept</button>
+      <button class="paywall-btn primary" onclick="acceptCookies()">Sure</button>
+      <button class="paywall-btn primary" onclick="acceptCookies()">Yes, please</button>
+      <button class="paywall-btn primary" onclick="acceptCookies()">Absolutely</button>
+      <button class="paywall-btn primary" onclick="acceptCookies()">Why not</button>
+      <button class="paywall-btn primary" onclick="acceptCookies()">Okay!</button>
+    </div>
+  </div>
+</div>
+
+<div class="paywall-overlay" id="paywallModal" onclick="if (event.target === this) closePaywall();">
+  <div class="paywall-card">
+    <div class="paywall-step1">
+      <h3>🔒 Fish Premium Required</h3>
+      <p>You've already used your free spin for this animal. Upgrade to <strong>Fish Premium Plus&trade;</strong> for unlimited spins!</p>
+      <div class="paywall-buttons">
+        <button class="paywall-btn primary" onclick="paywallUpgrade()">Upgrade — $4.99/mo</button>
+        <button class="paywall-btn secondary" onclick="closePaywall()">Maybe later</button>
+      </div>
+    </div>
+    <div class="paywall-step2">
+      <h3>😅 Just kidding</h3>
+      <p>There's no premium tier — this is just a static webpage. Enjoy your one free spin per animal!</p>
+      <div class="paywall-buttons">
+        <button class="paywall-btn primary" onclick="closePaywall()">Fair enough</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>
